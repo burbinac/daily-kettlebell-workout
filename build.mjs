@@ -19,3 +19,7 @@ await build({
 copyFileSync("src/index.html", "dist/index.html");
 copyFileSync("dist/app.js", "app.js");
 copyFileSync("src/index.html", "index.html");
+for (const f of ["favicon.svg", "favicon.ico", "favicon-32.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png"]) {
+  copyFileSync("src/" + f, "dist/" + f);
+  copyFileSync("src/" + f, f);
+}
