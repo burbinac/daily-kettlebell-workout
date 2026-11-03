@@ -19,7 +19,7 @@ await build({
 copyFileSync("src/index.html", "dist/index.html");
 copyFileSync("dist/app.js", "app.js");
 copyFileSync("src/index.html", "index.html");
-for (const f of ["favicon.svg", "favicon.ico", "favicon-16.png", "favicon-16x16.png", "favicon-32.png", "favicon-32x32.png", "favicon-64.png", "favicon-96.png", "favicon-180.png", "favicon-192.png", "favicon-512.png", "favicon-512x512.png", "apple-touch-icon.png"]) {
+for (const f of ["favicon.svg", "favicon.ico", "favicon-16.png", "favicon-16x16.png", "favicon-32.png", "favicon-32x32.png", "favicon-64.png", "favicon-96.png", "favicon-180.png", "favicon-192.png", "favicon-512.png", "favicon-512x512.png", "apple-touch-icon.png", "share.png"]) {
   copyFileSync("src/" + f, "dist/" + f);
   copyFileSync("src/" + f, f);
 }

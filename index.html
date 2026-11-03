@@ -16,15 +16,15 @@
 <meta property="og:title" content="Daily Kettlebell Workout">
 <meta property="og:description" content="A daily kettlebell workout app with guided sessions, progress tracking, and exercise videos">
 <meta property="og:url" content="https://kettlebell.bernardourbina.com">
-<meta property="og:image" content="https://kettlebell.bernardourbina.com/favicon-512.png">
+<meta property="og:image" content="https://kettlebell.bernardourbina.com/share.png">
 <meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="512">
-<meta property="og:image:height" content="512">
-<meta property="og:image:alt" content="Daily Kettlebell Workout logo">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Kettlebell logo with an aqua glow and the text Daily Kettlebell Workout">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Daily Kettlebell Workout">
 <meta name="twitter:description" content="A daily kettlebell workout app with guided sessions, progress tracking, and exercise videos">
-<meta name="twitter:image" content="https://kettlebell.bernardourbina.com/favicon-512.png">
+<meta name="twitter:image" content="https://kettlebell.bernardourbina.com/share.png">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -128,6 +128,11 @@
     .kb-list-card > :not(.kb-row) { grid-column: 1 / -1; }
     .kb-list-card > .kb-row { border-bottom: none !important; padding: 12px 0 8px !important; }
     .kb-list-card > .kb-row img { max-height: 380px !important; object-fit: contain; margin-top: 4px; }
+    /* Lists with three exercises (Activate) sit side by side so the whole step fits the window without scrolling. */
+    .kb-workout:not(.kb-running) .kb-list-card:has(> .kb-row:nth-child(4)) { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 24px; }
+    .kb-workout:not(.kb-running) .kb-list-card:has(> .kb-row:nth-child(4)) { align-items: stretch; }
+    .kb-workout:not(.kb-running) .kb-list-card:has(> .kb-row:nth-child(4)) > .kb-row { align-content: space-between; }
+    .kb-workout:not(.kb-running) .kb-list-card:has(> .kb-row:nth-child(4)) > .kb-row img { max-height: max(140px, calc(100vh - 520px)) !important; }
 
     /* Full session: the live card and the current move side by side, using the whole screen. */
     /* Full session: fits the window with no scrolling. The live card is on the left, the current move on the right. */
