@@ -1,4 +1,5 @@
 import { useGrokTheme, useState, useEffect, CSSProperties, ChangeEvent } from "grok/canvas";
+import { AccountRows } from "./auth";
 
 type DayKey = "A" | "B" | "C";
 type Tab = "workout" | "timer" | "videos" | "library" | "progress" | "photos" | "plan";
@@ -1727,7 +1728,7 @@ function Timer(props: { t: TimerApi; compact?: boolean }) {
 }
 
 // App logo, drawn in code: a dark kettlebell on deep blue, with a soft blue glow and a faint glowing floor.
-function Logo(props: { size: number }) {
+export function Logo(props: { size: number }) {
   return (
     <svg width={props.size} height={props.size} viewBox="0 0 100 100" role="img" aria-label="Daily Kettlebell Workout logo" style={{ display: "block", flex: "0 0 auto" }}>
       <defs>
@@ -3616,6 +3617,7 @@ export default function App() {
                 {voice ? "On" : "Off"}
               </button>
             </div>
+            <AccountRows rowStyle={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: theme.fill.secondary, borderRadius: 14, padding: "6px 10px 6px 14px" }} btnStyle={SMALL_BTN} subColor={theme.text.secondary} />
             <button onClick={resetDayCfg} style={{ ...SMALL_BTN, alignSelf: "center", border: "none", cursor: "pointer", background: "transparent", color: theme.text.secondary }}>
               Reset this day
             </button>
