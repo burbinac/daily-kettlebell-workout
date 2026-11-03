@@ -19,11 +19,33 @@
 <style>
   html, body { margin: 0; padding: 0; background: #12151A; color: #F3F6FA; min-height: 100%; }
   body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
-  #root { min-height: 100vh; width: 100%; max-width: 480px; margin: 0 auto; }
-  /* On wide screens keep the app's fixed bars (menu, Start bar, session view) in the centered column. */
+  /* Responsive column: phone 480px, tablet 720px, desktop 880px. --col drives both the page column and the fixed bars. */
+  :root { --col: 480px; }
+  @media (min-width: 768px) { :root { --col: 720px; } }
+  @media (min-width: 1100px) { :root { --col: 880px; } }
+  #root { min-height: 100vh; width: 100%; max-width: var(--col); margin: 0 auto; }
+  /* Inner content wrappers were capped at 640px for phones; let them use the wider column. */
+  #root [style*="max-width: 640px"] { max-width: 100% !important; }
+  /* Keep the app's fixed bars (menu, Start bar, session view) in the centered column. */
   @media (min-width: 520px) {
-    #root [style*="position: fixed"] { left: calc(50% - 240px) !important; right: calc(50% - 240px) !important; }
+    #root [style*="position: fixed"] { left: calc(50% - var(--col) / 2) !important; right: calc(50% - var(--col) / 2) !important; }
   }
+  /* On tablet and desktop, frame the column so it reads as an app panel on the dark page. */
+  @media (min-width: 768px) {
+    html { background: #0C0E12; }
+    body { background: #0C0E12; }
+    #root { box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 0 60px rgba(34,211,238,0.06); background: #12151A; }
+  }
+  /* On wider screens, keep muscle pictures and photos from growing taller than the screen. */
+  @media (min-width: 768px) {
+    #root img[alt$=" muscles"] { max-height: 420px; object-fit: contain; }
+    #root img[alt^="Progress photo"] { max-width: 420px; margin-left: auto !important; margin-right: auto !important; }
+  }
+  @media (min-width: 1100px) {
+    #root img[alt$=" muscles"] { max-height: 480px; }
+  }
+  /* Large pictures and cards never overflow their column. */
+  #root img, #root svg { max-width: 100%; }
 </style>
 </head>
 <body>
