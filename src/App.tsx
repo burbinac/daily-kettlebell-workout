@@ -1950,7 +1950,7 @@ export default function App() {
       });
     });
     if (r < ROUNDS && w.restSec > 0) {
-      script.push({ kind: "rest", stage: 2 + w.moves.length - 1, stageName: "Main set", name: "Rest", say: "Rest, " + String(w.restSec) + " seconds", secs: w.restSec, reps: 0, round: r, moveIdx: -1 });
+      script.push({ kind: "rest", stage: w.finalMove && r + 1 === ROUNDS ? practiceIdx : 2, stageName: "Main set", name: "Rest", say: "Rest, " + String(w.restSec) + " seconds", secs: w.restSec, reps: 0, round: r, moveIdx: -1 });
     }
   }
   if (w.coolMove) {
