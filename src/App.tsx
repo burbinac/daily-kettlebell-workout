@@ -1961,6 +1961,7 @@ export default function App() {
     script.push({ kind: "move", stage: stretchStage(ci), stageName: "Cool down", name: row[0], say: sayMove({ name: row[0], amount: row[1], cue: "" }), secs: t.secs > 0 ? t.secs : 30, reps: 0, round: 0, moveIdx: 0 });
   });
   const curItem: RunItem | undefined = runPhase === "run" ? script[runIdx] : undefined;
+
   // Reps tick by themselves: the move's time divided by its rep count is the seconds per rep. A tap adds one rep on top.
   const autoReps: number = curItem && curItem.reps > 0 ? Math.min(curItem.reps, Math.floor((curItem.secs - Math.max(0, runLeft)) / (curItem.secs / curItem.reps) + 0.0001)) : 0;
   const repCount: number = curItem && curItem.reps > 0 ? Math.min(curItem.reps, autoReps + runCount) : 0;
@@ -2290,7 +2291,7 @@ export default function App() {
   const listRow = (left: string, right: string, key: string, last: boolean, hotIdx?: number) => (
     <div
       key={key}
-      className="kb-row"
+      className={"kb-row" + (hotIdx !== undefined && curItem && runIdx === hotIdx ? " kb-cur" : "")}
       style={{
         display: "flex",
         justifyContent: "space-between",
@@ -2446,7 +2447,7 @@ export default function App() {
               const vids = videosFor(m.name);
               const last = allLog.find((e: LogEntry) => e.move === m.name);
               return (
-                <div key={key} className="kb-move" style={{ borderBottom: kk === stepMoves.length - 1 ? "none" : "1px solid " + theme.border.subtle, background: curItem && curItem.stage === stage && curItem.kind === "move" && curItem.moveIdx === k ? "rgba(34, 211, 238, 0.10)" : "transparent" }}>
+                <div key={key} className={"kb-move" + (curItem && curItem.stage === stage && curItem.kind === "move" && curItem.moveIdx === k ? " kb-cur" : "")} style={{ borderBottom: kk === stepMoves.length - 1 ? "none" : "1px solid " + theme.border.subtle, background: curItem && curItem.stage === stage && curItem.kind === "move" && curItem.moveIdx === k ? "rgba(34, 211, 238, 0.10)" : "transparent" }}>
                   <div className="kb-move-head" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 12px" }}>
                     <button
                       onClick={() => toggle(key)}
@@ -2754,6 +2755,31 @@ export default function App() {
       >
         {stageBody()}
       </div>
+      {runPhase === "run" ? (() => {
+        const seenNames: string[] = [];
+        if (curItem) seenNames.push(curItem.kind === "move" ? curItem.name : (script[runIdx + 1] ? script[runIdx + 1].name : ""));
+        const upNext: RunItem[] = [];
+        for (let i = runIdx + 1; i < script.length && upNext.length < 5; i++) {
+          const it: RunItem = script[i];
+          if (it.kind !== "move" || seenNames.indexOf(it.name) !== -1) continue;
+          seenNames.push(it.name);
+          upNext.push(it);
+        }
+        if (upNext.length === 0) return null;
+        return (
+          <div className="kb-upnext" aria-label="Up next">
+            <div className="kb-upnext-title">Up next</div>
+            <div className="kb-upnext-row">
+              {upNext.map((it: RunItem, i: number) => (
+                <div key={it.name + i} className="kb-upnext-tile">
+                  {thumbOf(it.name) ? <img src={thumbOf(it.name)} alt={it.name + " muscles"} /> : <div className="kb-upnext-blank" />}
+                  <div className="kb-upnext-name">{it.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })() : null}
       {runPhase === "run" ? null : (
         <button
           onClick={() => {

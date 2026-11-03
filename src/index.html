@@ -22,7 +22,8 @@
   /* Responsive column: phone 480px, tablet 720px, desktop 880px. --col drives both the page column and the fixed bars. */
   :root { --col: 480px; }
   @media (min-width: 768px) { :root { --col: 720px; } }
-  @media (min-width: 1100px) { :root { --col: 880px; } }
+  .kb-upnext { display: none; }
+    @media (min-width: 1100px) { :root { --col: 880px; } }
   #root { min-height: 100vh; width: 100%; max-width: var(--col); margin: 0 auto; }
   /* Inner content wrappers were capped at 640px for phones; let them use the wider column. */
   #root [style*="max-width: 640px"] { max-width: 100% !important; }
@@ -114,22 +115,37 @@
     .kb-list-card > .kb-row img { max-height: 380px !important; object-fit: contain; margin-top: 4px; }
 
     /* Full session: the live card and the current move side by side, using the whole screen. */
-    .kb-session { padding: 32px 48px 48px !important; }
-    .kb-session-inner { max-width: 1320px !important; }
-    .kb-workout.kb-running { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-    .kb-workout.kb-running > .kb-run { grid-column: 1; grid-row: 1 / span 2; padding: 32px !important; position: sticky; top: 0; }
-    .kb-workout.kb-running > .kb-wk-stage { grid-column: 2; grid-row: 1; opacity: 0.85 !important; }
-    .kb-workout.kb-running > .kb-wk-finish { grid-column: 2; grid-row: 2; }
+    /* Full session: fits the window with no scrolling. The live card is on the left, the current move on the right. */
+    .kb-session { padding: 24px 48px !important; overflow: hidden !important; }
+    .kb-session-inner { max-width: 1320px !important; height: 100%; }
+    .kb-workout.kb-running { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto; height: 100%; align-items: stretch; row-gap: 16px !important; }
+    .kb-workout.kb-running > .kb-run { grid-column: 1; grid-row: 1 / span 3; min-height: 0; overflow: hidden; justify-content: space-between; padding: clamp(16px, 3vh, 32px) 32px !important; gap: clamp(8px, 1.6vh, 16px) !important; }
+    .kb-workout.kb-running > .kb-wk-stage { grid-column: 2; grid-row: 1; opacity: 0.85 !important; min-height: 0; overflow: hidden; }
+    .kb-workout.kb-running > .kb-wk-stage > .kb-step-card, .kb-workout.kb-running > .kb-wk-stage > .kb-list-card { max-height: 100%; overflow: hidden; padding: clamp(14px, 2.4vh, 28px) 28px !important; }
+    .kb-workout.kb-running > .kb-upnext { grid-column: 2; grid-row: 2; }
+    .kb-workout.kb-running > .kb-wk-finish { grid-column: 2; grid-row: 3; }
+    .kb-workout.kb-running > .kb-wk-stage { opacity: 1 !important; }
+    .kb-upnext { display: block !important; background: #1E2733; border-radius: 22px; padding: 12px 16px 14px; }
+    .kb-upnext-title { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8FA0B3; margin-bottom: 8px; }
+    .kb-upnext-row { display: flex; gap: 10px; }
+    .kb-upnext-tile { flex: 1 1 0; min-width: 0; }
+    .kb-upnext-tile img, .kb-upnext-blank { display: block; width: 100%; height: clamp(52px, 9vh, 92px); object-fit: cover; border-radius: 12px; background: #050C18; }
+    .kb-upnext-name { margin-top: 6px; font-size: 12px; line-height: 1.25; color: #C9D3DE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .kb-running .kb-move { display: block; }
-    .kb-running .kb-move > .kb-move-pic { padding: 0 0 12px !important; }
+    .kb-running .kb-move > .kb-move-pic { padding: 0 0 8px !important; }
+    .kb-running .kb-move > .kb-move-pic img { max-height: max(130px, calc(100vh - 610px)) !important; object-fit: contain; }
     .kb-running .kb-move-cue { display: none !important; }
+    @media (min-height: 820px) { .kb-running .kb-move-cue { display: block !important; } }
     .kb-running .kb-list-card { grid-template-columns: 1fr; }
-    .kb-run-main > div:nth-child(2) { font-size: 60px !important; line-height: 66px !important; }
-    .kb-run-main > div:nth-child(3) { font-size: 34px !important; line-height: 40px !important; }
-    .kb-run-main > div:nth-child(4) { font-size: 96px !important; line-height: 100px !important; font-variant-numeric: tabular-nums; }
-    .kb-run-rep { min-height: 260px !important; }
-    .kb-run-rep > div:first-child { font-size: 112px !important; line-height: 116px !important; }
-    .kb-run > div:last-child button { height: 56px !important; font-size: 17px !important; }
+    .kb-running .kb-list-card:has(.kb-cur) > .kb-row:not(.kb-cur) { display: none !important; }
+    .kb-running .kb-list-card > .kb-row img { max-height: max(130px, calc(100vh - 540px)) !important; }
+    .kb-run-main { gap: clamp(4px, 1vh, 10px) !important; }
+    .kb-run-main > div:nth-child(2) { font-size: clamp(34px, 6.4vh, 60px) !important; line-height: 1.1 !important; }
+    .kb-run-main > div:nth-child(3) { font-size: clamp(22px, 3.8vh, 34px) !important; line-height: 1.2 !important; }
+    .kb-run-main > div:nth-child(4) { font-size: clamp(56px, 10vh, 96px) !important; line-height: 1.05 !important; font-variant-numeric: tabular-nums; }
+    .kb-run-rep { min-height: clamp(150px, 26vh, 260px) !important; }
+    .kb-run-rep > div:first-child { font-size: clamp(70px, 12vh, 112px) !important; line-height: 1.05 !important; }
+    .kb-run > div:last-child button { height: clamp(44px, 6vh, 56px) !important; font-size: 17px !important; }
 
     /* The Start bar sits over the main area, not under the sidebar. */
     .kb-startbar { left: var(--side) !important; padding-bottom: 24px !important; }
