@@ -1699,7 +1699,7 @@ function Timer(props: { t: TimerApi; compact?: boolean }) {
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: compact ? 14 : 32 }}>
+    <div className="kb-timer" style={{ display: "flex", flexDirection: "column", gap: compact ? 14 : 32 }}>
       <Ring progress={progress} clock={clock} label={label} size={compact ? 150 : undefined} />
       {(
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center" }}>
@@ -2042,6 +2042,7 @@ export default function App() {
   const sessionWrap = (body: any) =>
     runPhase === "run" ? (
       <div
+        className="kb-session"
         style={{
           position: "fixed",
           top: 0,
@@ -2059,7 +2060,7 @@ export default function App() {
           padding: "calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))",
         } as CSSProperties}
       >
-        <div style={{ maxWidth: 640, margin: "0 auto" }}>{body}</div>
+        <div className="kb-session-inner" style={{ maxWidth: 640, margin: "0 auto" }}>{body}</div>
       </div>
     ) : (
       body
@@ -2289,6 +2290,7 @@ export default function App() {
   const listRow = (left: string, right: string, key: string, last: boolean, hotIdx?: number) => (
     <div
       key={key}
+      className="kb-row"
       style={{
         display: "flex",
         justifyContent: "space-between",
@@ -2344,7 +2346,7 @@ export default function App() {
       if (!lib || shownBase > 0) return null;
       const pickerOpen = swapOpen === key;
       return (
-        <div style={{ padding: "0 12px 12px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="kb-move-swap" style={{ padding: "0 12px 12px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
           <button
             onClick={() => setSwapOpen(pickerOpen ? "" : key)}
             style={{ ...pillBtn("rgba(34, 211, 238, 0.12)", "#22D3EE"), ...SMALL_BTN, width: "100%", border: "1px solid rgba(34, 211, 238, 0.45)" }}
@@ -2389,7 +2391,7 @@ export default function App() {
       const from = def.kind === "mob" ? 0 : 2;
       const rows: string[][] = WARMUP.slice(from, def.kind === "mob" ? 2 : WARMUP.length);
       return (
-        <div style={card}>
+        <div className="kb-list-card" style={card}>
           <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 8, color: theme.text.primary }}>{def.name}</div>
           {rows.map((row: string[], i: number) => listRow(row[0], row[1], "w" + String(from + i), i === rows.length - 1, from + i))}
         </div>
@@ -2400,8 +2402,8 @@ export default function App() {
       const stepK: number = def.kind === "practice" ? 0 : def.k;
       const stepMoves: Move[] = def.kind === "practice" && w.finalMove ? [w.finalMove] : [w.moves[def.k]];
       return (
-        <div style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, background: theme.fill.secondary, borderRadius: 18, padding: "14px 8px" }}>
+        <div className="kb-step-card" style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="kb-rounds" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, background: theme.fill.secondary, borderRadius: 18, padding: "14px 8px" }}>
             {ROUND_LIST.map((r: number) => {
               const complete = runPhase === "done" || r < curRound;
               const current = !complete && r === curRound;
@@ -2444,8 +2446,8 @@ export default function App() {
               const vids = videosFor(m.name);
               const last = allLog.find((e: LogEntry) => e.move === m.name);
               return (
-                <div key={key} style={{ borderBottom: kk === stepMoves.length - 1 ? "none" : "1px solid " + theme.border.subtle, background: curItem && curItem.stage === stage && curItem.kind === "move" && curItem.moveIdx === k ? "rgba(34, 211, 238, 0.10)" : "transparent" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 12px" }}>
+                <div key={key} className="kb-move" style={{ borderBottom: kk === stepMoves.length - 1 ? "none" : "1px solid " + theme.border.subtle, background: curItem && curItem.stage === stage && curItem.kind === "move" && curItem.moveIdx === k ? "rgba(34, 211, 238, 0.10)" : "transparent" }}>
+                  <div className="kb-move-head" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 12px" }}>
                     <button
                       onClick={() => toggle(key)}
                       aria-label="Mark done"
@@ -2496,13 +2498,16 @@ export default function App() {
                     </button>
                   </div>
                   {MUSCLE[m.name] ? (
-                    <div style={{ padding: "0 12px 12px 12px" }}>
+                    <div className="kb-move-pic" style={{ padding: "0 12px 12px 12px" }}>
                       <img src={MUSCLE[m.name]} alt={m.name + " muscles"} style={{ display: "block", width: "100%", height: "auto", borderRadius: 16, background: "#050C18" }} />
                     </div>
                   ) : null}
                   {swapUi(m, key)}
+                  {!isOpen && m.cue ? (
+                    <div className="kb-move-cue" style={{ display: "none" }}>{m.cue}</div>
+                  ) : null}
                   {isOpen ? (
-                    <div style={{ padding: "0 12px 16px 12px", display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div className="kb-move-detail" style={{ padding: "0 12px 16px 12px", display: "flex", flexDirection: "column", gap: 14 }}>
                       <div style={{ fontSize: 14, lineHeight: "20px", color: theme.text.secondary, overflowWrap: "anywhere" }}>{m.cue}</div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "#22D3EE" }}>{"Round " + String(curRound) + " of " + String(ROUNDS) + (setsDone[setKeyOf(i, curRound)] ? " \u00b7 logged" : " \u00b7 up next")}</div>
@@ -2555,7 +2560,7 @@ export default function App() {
               );
             })}
           </div>
-          <div style={{ fontSize: 13, color: theme.text.secondary, padding: "0 4px" }}>
+          <div className="kb-step-hint" style={{ fontSize: 13, color: theme.text.secondary, padding: "0 4px" }}>
             Tap a move for cues, weight and videos. Tap the circle to mark it done.
             {!savingWorks ? " Logs can't be saved on this device here, so they last only while the page is open." : ""}
           </div>
@@ -2563,7 +2568,7 @@ export default function App() {
       );
     }
     return (
-      <div style={card}>
+      <div className="kb-list-card" style={card}>
         <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 8, color: theme.text.primary }}>{def.name}</div>
         {def.kind === "practice" && w.coolMove ? (
           <div style={{ display: "flex", alignItems: "center", gap: 12, background: theme.fill.secondary, borderRadius: 18, padding: "12px 12px", marginBottom: 8 }}>
@@ -2608,14 +2613,14 @@ export default function App() {
   };
 
   const workoutScreen = () => sessionWrap(
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className={"kb-workout" + (runPhase === "run" ? " kb-running" : "")} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {runPhase === "run" ? null : (
         <div style={{ display: "contents" }}>
-      <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 4 }}>
-        <div style={{ fontSize: 32, lineHeight: "38px", fontWeight: 800, letterSpacing: "-0.02em", color: "#FBBF24", overflowWrap: "anywhere" }}>{TARGET[day]}</div>
+      <div className="kb-wk-head" style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="kb-wk-target" style={{ fontSize: 32, lineHeight: "38px", fontWeight: 800, letterSpacing: "-0.02em", color: "#FBBF24", overflowWrap: "anywhere" }}>{TARGET[day]}</div>
         <div style={{ fontSize: 15, fontWeight: 600, color: theme.text.secondary }}>{String(w.minutes) + " min"}</div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", background: theme.fill.secondary, borderRadius: 16, padding: 4, gap: 0 }}>
+      <div className="kb-wk-days" style={{ display: "flex", alignItems: "center", background: theme.fill.secondary, borderRadius: 16, padding: 4, gap: 0 }}>
         {dayKeys.map((k: DayKey, idx: number) => (
           <div key={k} style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
             {idx > 0 ? (
@@ -2651,7 +2656,7 @@ export default function App() {
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", gap: 6 }}>
+      <div className="kb-wk-bars" style={{ display: "flex", gap: 6 }}>
         {stageList.map((s: string, i: number) => (
           <button
             key={s}
@@ -2672,7 +2677,7 @@ export default function App() {
         </div>
       )}
       {runPhase === "run" && curItem ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, background: theme.bg.subtle, borderRadius: 28, padding: "22px 20px", border: "2px solid #A78BFA", boxShadow: "0 0 26px rgba(167, 139, 250, 0.28)" }}>
+        <div className="kb-run" style={{ display: "flex", flexDirection: "column", gap: 16, background: theme.bg.subtle, borderRadius: 28, padding: "22px 20px", border: "2px solid #A78BFA", boxShadow: "0 0 26px rgba(167, 139, 250, 0.28)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <div style={{ background: "#A78BFA", color: "#14102A", fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: 999, padding: "6px 12px" }}>Full session</div>
             <div style={{ fontSize: 13, color: theme.text.secondary }}>{String(runIdx + 1) + " of " + String(script.length)}</div>
@@ -2684,7 +2689,7 @@ export default function App() {
           <div style={{ height: 6, borderRadius: 3, background: theme.fill.secondary, overflow: "hidden" }}>
             <div style={{ width: String(Math.round(((runIdx + 1) / script.length) * 100)) + "%", height: "100%", background: "#A78BFA" }} />
           </div>
-          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="kb-run-main" style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ fontSize: 14, color: theme.text.secondary, fontWeight: 600 }}>
               {curItem.stageName + (ROUNDS > 1 && curItem.round > 0 ? " \u00b7 Round " + String(curItem.round) + " of " + String(ROUNDS) : "")}
             </div>
@@ -2698,6 +2703,7 @@ export default function App() {
           </div>
           {curItem.kind === "move" && curItem.reps > 0 ? (
             <button
+              className="kb-run-rep"
               onClick={tapRep}
               aria-label={"Count a rep of " + curItem.name}
               style={{ width: "100%", minHeight: 150, borderRadius: 24, border: "2px solid #A78BFA", background: "rgba(167, 139, 250, 0.12)", color: "#A78BFA", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: 12, opacity: runOn ? 1 : 0.5 }}
@@ -2729,6 +2735,7 @@ export default function App() {
         </div>
       ) : null}
       <div
+        className="kb-wk-stage"
         style={{ touchAction: "pan-y", display: "flex", flexDirection: "column", opacity: runPhase === "run" ? 0.55 : 1 }}
         onTouchStart={(e: any) => {
           const t = e.touches && e.touches[0];
@@ -2757,6 +2764,7 @@ export default function App() {
               // scrolling not allowed here
             }
           }}
+          className="kb-wk-learn"
           style={{ alignSelf: "center", display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", padding: "6px 10px", marginTop: -8, cursor: "pointer", color: "#22D3EE", fontSize: 15, fontWeight: 600 }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -2767,7 +2775,7 @@ export default function App() {
       )}
       {runPhase === "run" && !trainedToday ? (
         confirmFinish ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, background: theme.fill.secondary, borderRadius: 22, padding: 16 }}>
+          <div className="kb-wk-finish" style={{ display: "flex", flexDirection: "column", gap: 12, background: theme.fill.secondary, borderRadius: 22, padding: 16 }}>
             <div style={{ textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.text.primary }}>Finish day? This counts today toward your streak and stops the session.</div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setConfirmFinish(false)} style={{ ...SMALL_BTN, flex: 1, height: 44, borderRadius: 22, border: "none", cursor: "pointer", background: theme.border.subtle, color: theme.text.primary }}>
@@ -2787,13 +2795,14 @@ export default function App() {
             </div>
           </div>
         ) : (
-          <button onClick={() => setConfirmFinish(true)} style={{ ...SMALL_BTN, width: "100%", height: 44, borderRadius: 22, border: "none", cursor: "pointer", background: theme.fill.secondary, color: theme.text.primary }}>
+          <button className="kb-wk-finish" onClick={() => setConfirmFinish(true)} style={{ ...SMALL_BTN, width: "100%", height: 44, borderRadius: 22, border: "none", cursor: "pointer", background: theme.fill.secondary, color: theme.text.primary }}>
             Finish day
           </button>
         )
       ) : null}
       {runPhase === "run" ? null : (
         <div
+          className="kb-startbar"
           style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 20, padding: "28px 20px calc(16px + env(safe-area-inset-bottom)) 20px", background: "linear-gradient(to bottom, rgba(5, 8, 12, 0) 0%, rgba(5, 8, 12, 0.82) 45%, rgba(5, 8, 12, 0.95) 100%)", pointerEvents: "none", boxSizing: "border-box" }}
         >
           <button
@@ -2808,7 +2817,7 @@ export default function App() {
   );
 
   const timerScreen = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="kb-screen kb-timer-screen" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
         <div style={eyebrow}>Interval timer</div>
         <h1 style={bigTitle}>Timer</h1>
@@ -2816,14 +2825,14 @@ export default function App() {
           Set work, rest and rounds, then press Start.
         </div>
       </div>
-      <div style={card}>
+      <div className="kb-timer-card" style={card}>
         <Timer t={timer} />
       </div>
     </div>
   );
 
   const videosScreen = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="kb-screen kb-videos" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
         <div style={eyebrow}>Learn the moves</div>
         <h1 style={bigTitle}>Videos</h1>
@@ -2831,7 +2840,7 @@ export default function App() {
           Five short videos, in the order I would watch them.
         </div>
       </div>
-      <div style={{ ...card, padding: "4px 20px" }}>
+      <div className="kb-vids" style={{ ...card, padding: "4px 20px" }}>
         {VIDEOS.map((v: string[], i: number) => (
           <a
             key={v[2]}
@@ -2860,7 +2869,7 @@ export default function App() {
   );
 
   const planScreen = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="kb-screen kb-plan" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
         <div style={eyebrow}>Your week</div>
         <h1 style={bigTitle}>Plan</h1>
@@ -2868,7 +2877,7 @@ export default function App() {
           Three sessions on repeat, with Sunday off.
         </div>
       </div>
-      <div style={{ ...card, padding: "4px 20px" }}>
+      <div className="kb-plan-week" style={{ ...card, padding: "4px 20px" }}>
         {WEEK.map((row: string[], i: number) => listRow(row[0], row[1], "k" + String(i), i === WEEK.length - 1))}
       </div>
       <div style={card}>
@@ -2899,7 +2908,7 @@ export default function App() {
   );
 
   const libraryScreen = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="kb-screen kb-lib" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
         <div style={eyebrow}>Every move</div>
         <h1 style={bigTitle}>Library</h1>
@@ -2915,13 +2924,14 @@ export default function App() {
         const showPhoto = !!item.image && (libPhoto[item.name] === true || !MUSCLE[item.name]);
         const activeSwap = swaps[item.name];
         return (
-          <div key={item.name} style={{ ...card, padding: 0, overflow: "hidden" }}>
+          <div key={item.name} className={"kb-lib-card" + (isOpenL ? " kb-open" : "")} style={{ ...card, padding: 0, overflow: "hidden" }}>
             <button
               onClick={() => setLibOpen(isOpenL ? "" : item.name)}
               aria-label={item.name}
+              className="kb-lib-head"
               style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", border: "none", background: "none", padding: 16, textAlign: "left", cursor: "pointer", color: theme.text.primary }}
             >
-              <div style={{ position: "relative", width: 72, height: 72, borderRadius: 18, overflow: "hidden", flex: "0 0 72px", background: "#050C18", border: "1px solid rgba(34,211,238,0.25)", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", color: "#22D3EE" }}>
+              <div className="kb-lib-thumb" style={{ position: "relative", width: 72, height: 72, borderRadius: 18, overflow: "hidden", flex: "0 0 72px", background: "#050C18", border: "1px solid rgba(34,211,238,0.25)", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", color: "#22D3EE" }}>
                 <NavIcon id="workout" />
                 {thumb ? (
                   <img
@@ -2939,10 +2949,10 @@ export default function App() {
                 <div style={{ ...subtle, marginTop: 2 }}>{item.muscles}</div>
                 {activeSwap ? <div style={{ fontSize: 12, fontWeight: 600, color: "#22D3EE", marginTop: 4 }}>{"Swapped for " + activeSwap[0]}</div> : null}
               </div>
-              <div style={{ fontSize: 22, color: theme.text.secondary, transform: isOpenL ? "rotate(90deg)" : "none", lineHeight: "22px" }}>{"\u203a"}</div>
+              <div className="kb-lib-chev" style={{ fontSize: 22, color: theme.text.secondary, transform: isOpenL ? "rotate(90deg)" : "none", lineHeight: "22px" }}>{"\u203a"}</div>
             </button>
             {isOpenL ? (
-              <div style={{ padding: "0 16px 18px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div className="kb-lib-detail" style={{ padding: "0 16px 18px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
                 {hasBoth ? (
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
@@ -3070,7 +3080,7 @@ export default function App() {
       </div>
     );
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className="kb-screen kb-photos" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
           <div style={eyebrow}>Over time</div>
           <h1 style={bigTitle}>Progress Pictures</h1>
@@ -3106,13 +3116,13 @@ export default function App() {
           </div>
         </div>
         {photos.length > 0 ? (
-          <div style={{ display: "flex", background: theme.fill.secondary, borderRadius: 14, padding: 3, gap: 2 }}>
+          <div className="kb-photo-seg" style={{ display: "flex", background: theme.fill.secondary, borderRadius: 14, padding: 3, gap: 2 }}>
             {seg("gallery", "Gallery")}
             {seg("compare", "Compare")}
           </div>
         ) : null}
         {photos.length > 0 && photoView === "gallery" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+          <div className="kb-photo-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
             {photos.map((p: Photo) => (
               <div key={p.id} style={{ ...card, padding: 0, overflow: "hidden" }}>
                 <img src={p.data} alt={"Progress photo from " + prettyDate(p.date)} style={{ display: "block", width: "100%", aspectRatio: "3 / 4", objectFit: "cover" }} />
@@ -3130,7 +3140,7 @@ export default function App() {
           </div>
         ) : null}
         {photos.length > 0 && photoView === "compare" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="kb-photo-compare" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {picker(aId, setCmpA, "Before")}
               {picker(bId, setCmpB, "After")}
@@ -3200,7 +3210,7 @@ export default function App() {
       );
     };
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className="kb-screen kb-prog" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
           <div style={eyebrow}>Weight log</div>
           <h1 style={bigTitle}>Progress</h1>
@@ -3221,7 +3231,7 @@ export default function App() {
           </div>
         ) : null}
         {names.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="kb-prog-chart" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={eyebrow}>Weight over time</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {names.map((n: string) => (
@@ -3303,7 +3313,53 @@ export default function App() {
           ".kb-root button:active:not(:disabled) { transform: translateY(1px) scale(0.985); filter: brightness(0.95); } " +
           ".kb-dark, .kb-dark div, .kb-dark span, .kb-dark h1, .kb-dark p, .kb-dark label, .kb-dark a, .kb-dark button, .kb-dark input, .kb-dark select, .kb-dark option { color: #F3F6FA; }"}
       </style>
-      <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+      <nav className="kb-side" aria-label="Sections" style={{ display: "none" }}>
+        {["workout", "progress", "photos", "timer", "videos", "library", "plan"].map((id: string) => {
+          const found = tabs.find((t: { id: Tab; label: string }) => t.id === id);
+          const label = found ? found.label : id;
+          const active = tab === id;
+          return (
+            <button
+              key={id}
+              className={"kb-side-item" + (active ? " kb-active" : "")}
+              onClick={() => {
+                setTab(id as Tab);
+                try {
+                  window.scrollTo(0, 0);
+                } catch {
+                  // no scrolling here
+                }
+              }}
+              aria-current={active ? "page" : undefined}
+            >
+              <NavIcon id={id} size={20} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+        <div className="kb-side-spacer" />
+        <button
+          className={"kb-side-item" + (settingsOpen && menuPinned ? " kb-active" : "")}
+          onClick={() => {
+            if (settingsOpen && menuPinned) {
+              setSettingsOpen(false);
+              setMenuPinned(false);
+              setSettingsMore(false);
+            } else {
+              setMenuPinned(true);
+              setSettingsMore(true);
+              setSettingsOpen(true);
+            }
+          }}
+          aria-expanded={settingsOpen && menuPinned}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <g fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></g>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+      <div className="kb-main" style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
         {layout === 1 ? (
           <div style={{ display: "flex", alignItems: "center", gap: 18, background: theme.bg.elevated, borderRadius: 32, padding: 20, boxShadow: theme.shadow.card }}>
             <Logo size={84} />
@@ -3362,7 +3418,7 @@ export default function App() {
           </div>
         ) : null}
         {layout === 9 ? (
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 14, alignItems: "center", textAlign: "center", padding: "16px 0" }}>
+          <div className="kb-brand" style={{ position: "relative", display: "flex", flexDirection: "column", gap: 14, alignItems: "center", textAlign: "center", padding: "16px 0" }}>
             <button
               onClick={() => {
                 if (settingsOpen) {
@@ -3375,6 +3431,7 @@ export default function App() {
                 }
               }}
               aria-label="Settings"
+              className="kb-gear"
               style={{ position: "absolute", right: 0, top: 8, width: 40, height: 40, borderRadius: 20, border: "none", cursor: "pointer", padding: 0, background: theme.fill.secondary, color: theme.text.secondary, display: "flex", alignItems: "center", justifyContent: "center" }}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
@@ -3383,9 +3440,9 @@ export default function App() {
             </button>
             <Logo size={130} />
             <div style={{ width: 40, height: 2, borderRadius: 2, background: "#22D3EE", opacity: 0.8 }} />
-            <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.45em", color: "#F3F6FA" }}>KETTLEBELL WORKOUT</div>
+            <div className="kb-brand-name" style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.45em", color: "#F3F6FA" }}>KETTLEBELL WORKOUT</div>
             {tab === "workout" && (streak >= 1 || days.length > 0) ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 2, fontSize: 16, fontWeight: 700, color: "#FBBF24" }}>
+              <div className="kb-streak" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 2, fontSize: 16, fontWeight: 700, color: "#FBBF24" }}>
                 <span>{String(streak) + " day streak"}</span>
                 <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   {week.map((x: { iso: string; label: string }) => {
@@ -3416,6 +3473,7 @@ export default function App() {
       </div>
       {settingsOpen && menuPinned ? (
         <div
+          className="kb-menu"
           style={{ position: "fixed", left: 0, right: 0, top: 0, zIndex: 30, background: theme.bg.elevated, borderBottom: "1px solid " + theme.border.subtle, boxShadow: "0 6px 20px rgba(0,0,0,0.45)", padding: "calc(8px + env(safe-area-inset-top)) 12px 10px", boxSizing: "border-box" }}
         >
           <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -3435,7 +3493,7 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            <div className="kb-menu-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
               {["workout", "progress", "photos", "timer", "videos", "library", "plan"].map((id: string) => {
                 const found = tabs.find((t: { id: Tab; label: string }) => t.id === id);
                 const label = id === "photos" ? "Pictures" : found ? found.label : id;
@@ -3472,7 +3530,7 @@ export default function App() {
               </button>
             </div>
             {settingsMore ? (
-              <div style={{ maxHeight: "min(55vh, 460px)", overflowY: "auto", WebkitOverflowScrolling: "touch", paddingTop: 2 }}>
+              <div className="kb-menu-scroll" style={{ maxHeight: "min(55vh, 460px)", overflowY: "auto", WebkitOverflowScrolling: "touch", paddingTop: 2 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {runPhase === "run" ? (
               <div style={{ fontSize: 13, color: theme.text.secondary }}>Stop the session to change these.</div>

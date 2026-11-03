@@ -27,7 +27,7 @@
   /* Inner content wrappers were capped at 640px for phones; let them use the wider column. */
   #root [style*="max-width: 640px"] { max-width: 100% !important; }
   /* Keep the app's fixed bars (menu, Start bar, session view) in the centered column. */
-  @media (min-width: 520px) {
+  @media (min-width: 520px) and (max-width: 1099px) {
     #root [style*="position: fixed"] { left: calc(50% - var(--col) / 2) !important; right: calc(50% - var(--col) / 2) !important; }
   }
   /* On tablet and desktop, frame the column so it reads as an app panel on the dark page. */
@@ -46,6 +46,138 @@
   }
   /* Large pictures and cards never overflow their column. */
   #root img, #root svg { max-width: 100%; }
+
+  /* ===== Desktop (1100px and up): sidebar app layout with multi-column screens. Phone and tablet are untouched. ===== */
+  @media (min-width: 1100px) {
+    :root { --side: 264px; }
+    html, body { background: #12151A; }
+    #root { max-width: none; box-shadow: none; background: #12151A; }
+    .kb-root { padding: 44px 56px 150px calc(var(--side) + 56px) !important; }
+    .kb-main { max-width: 1240px !important; margin: 0 auto !important; gap: 0 !important; }
+    .kb-main > div[style*="height: 16px"] { display: none; }
+
+    /* Sidebar: brand at the top, section links below, settings at the bottom. */
+    .kb-side { display: flex !important; flex-direction: column; gap: 4px; position: fixed; left: 0; top: 0; bottom: 0; width: var(--side); box-sizing: border-box; padding: 236px 16px 24px; background: #0E1116; border-right: 1px solid rgba(255,255,255,0.06); z-index: 25; overflow-y: auto; }
+    .kb-side-spacer { flex: 1 1 auto; min-height: 16px; }
+    .kb-side-item { display: flex; align-items: center; gap: 14px; width: 100%; height: 46px; padding: 0 16px; border: none; border-radius: 12px; background: transparent; color: #B7C2D0 !important; font: inherit; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer; }
+    .kb-side-item span { color: inherit !important; }
+    .kb-side-item:hover { background: rgba(255,255,255,0.05); color: #F3F6FA !important; }
+    .kb-side-item.kb-active { background: rgba(34,211,238,0.12); color: #22D3EE !important; box-shadow: inset 3px 0 0 #22D3EE; }
+    .kb-brand { position: fixed !important; left: 0; top: 0; width: var(--side); box-sizing: border-box; padding: 32px 16px 0 !important; gap: 12px !important; z-index: 26; }
+    .kb-brand > svg { width: 92px; height: 92px; }
+    .kb-brand-name { font-size: 11px !important; letter-spacing: 0.34em !important; }
+    .kb-streak { font-size: 14px !important; gap: 8px !important; flex-direction: column; }
+    .kb-gear { display: none !important; }
+
+    /* Settings opens as a panel beside the sidebar instead of a bar across the top. */
+    .kb-menu { left: calc(var(--side) + 16px) !important; right: auto !important; top: 16px !important; width: 400px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08) !important; padding: 14px 16px 16px !important; }
+    .kb-menu-grid { display: none !important; }
+    .kb-menu-scroll { max-height: calc(100vh - 110px) !important; }
+
+    /* Type scale for large screens. */
+    .kb-root h1 { font-size: 56px !important; line-height: 60px !important; letter-spacing: -0.035em !important; }
+    .kb-screen > div:first-child > div[style*="font-size: 18px"] { font-size: 20px !important; line-height: 30px !important; max-width: 720px; }
+    .kb-screen { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px !important; align-items: start; }
+    .kb-screen > * { grid-column: 1 / -1; }
+
+    /* Workout: title left, day switcher right, full-width step bars, then the step card. */
+    .kb-workout { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 40px; row-gap: 28px !important; align-items: center; }
+    .kb-workout > *, .kb-workout > [style*="display: contents"] > * { grid-column: 1 / -1; }
+    .kb-workout .kb-wk-head { grid-column: 1; text-align: left !important; gap: 6px !important; }
+    .kb-wk-target { font-size: 48px !important; line-height: 54px !important; }
+    .kb-wk-head > div + div { font-size: 17px !important; }
+    .kb-workout .kb-wk-days { grid-column: 2; padding: 6px !important; }
+    .kb-wk-days button { height: 48px !important; font-size: 16px !important; }
+    .kb-wk-bars { gap: 10px !important; }
+    .kb-wk-bars button { height: 8px !important; border-radius: 4px !important; }
+    .kb-wk-learn { justify-self: center; margin-top: -4px !important; }
+    .kb-step-card, .kb-list-card { padding: 28px !important; border-radius: 24px !important; }
+    .kb-step-card { gap: 18px !important; }
+    .kb-step-hint { font-size: 14px !important; }
+
+    /* A move: big muscle picture on the left, name, reps, cue, swap and logging on the right. */
+    .kb-move { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; column-gap: 32px; align-items: start; }
+    .kb-move > * { grid-column: 2; }
+    .kb-move > .kb-move-pic { grid-column: 1; grid-row: 1 / span 5; padding: 0 !important; }
+    .kb-move > .kb-move-pic img { max-height: 520px !important; }
+    .kb-move-head { padding: 4px 0 16px !important; }
+    .kb-move-head button[aria-label^="Details"] > div:first-child > div:first-child { font-size: 30px !important; line-height: 36px !important; letter-spacing: -0.02em; }
+    .kb-move-head button[aria-label^="Details"] > div:nth-child(2) { font-size: 16px !important; }
+    .kb-move-cue { display: block !important; font-size: 16px; line-height: 25px; color: #B7C2D0 !important; padding: 0 0 18px; }
+    .kb-move-swap, .kb-move-detail { padding-left: 0 !important; padding-right: 0 !important; }
+    .kb-move-detail > div:first-child { font-size: 16px !important; line-height: 25px !important; }
+
+    /* Warm-up and stretch steps: two moves per row, each with its picture. */
+    .kb-list-card { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; align-items: start; }
+    .kb-list-card > :not(.kb-row) { grid-column: 1 / -1; }
+    .kb-list-card > .kb-row { border-bottom: none !important; padding: 12px 0 8px !important; }
+    .kb-list-card > .kb-row img { max-height: 380px !important; object-fit: contain; margin-top: 4px; }
+
+    /* Full session: the live card and the current move side by side, using the whole screen. */
+    .kb-session { padding: 32px 48px 48px !important; }
+    .kb-session-inner { max-width: 1320px !important; }
+    .kb-workout.kb-running { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+    .kb-workout.kb-running > .kb-run { grid-column: 1; grid-row: 1 / span 2; padding: 32px !important; position: sticky; top: 0; }
+    .kb-workout.kb-running > .kb-wk-stage { grid-column: 2; grid-row: 1; opacity: 0.85 !important; }
+    .kb-workout.kb-running > .kb-wk-finish { grid-column: 2; grid-row: 2; }
+    .kb-running .kb-move { display: block; }
+    .kb-running .kb-move > .kb-move-pic { padding: 0 0 12px !important; }
+    .kb-running .kb-move-cue { display: none !important; }
+    .kb-running .kb-list-card { grid-template-columns: 1fr; }
+    .kb-run-main > div:nth-child(2) { font-size: 60px !important; line-height: 66px !important; }
+    .kb-run-main > div:nth-child(3) { font-size: 34px !important; line-height: 40px !important; }
+    .kb-run-main > div:nth-child(4) { font-size: 96px !important; line-height: 100px !important; font-variant-numeric: tabular-nums; }
+    .kb-run-rep { min-height: 260px !important; }
+    .kb-run-rep > div:first-child { font-size: 112px !important; line-height: 116px !important; }
+    .kb-run > div:last-child button { height: 56px !important; font-size: 17px !important; }
+
+    /* The Start bar sits over the main area, not under the sidebar. */
+    .kb-startbar { left: var(--side) !important; padding-bottom: 24px !important; }
+    .kb-startbar button { max-width: 440px !important; height: 58px !important; }
+
+    /* Library: tiles with a big picture, three across; an opened move spans the row with picture and swaps side by side. */
+    .kb-lib { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 24px !important; }
+    .kb-lib-card { grid-column: auto !important; transition: box-shadow 0.15s ease; }
+    .kb-lib-card:hover { box-shadow: 0 0 0 1px rgba(34,211,238,0.35), 0 10px 24px rgba(0,0,0,0.5) !important; }
+    .kb-lib-head { flex-direction: column; align-items: stretch !important; gap: 14px !important; padding: 14px 14px 18px !important; }
+    .kb-lib-thumb { width: 100% !important; height: 230px !important; flex: none !important; border-radius: 16px !important; }
+    .kb-lib-chev { display: none; }
+    .kb-lib-card.kb-open { grid-column: 1 / -1 !important; }
+    .kb-lib-card.kb-open .kb-lib-head { flex-direction: row; align-items: center !important; padding: 20px 24px !important; }
+    .kb-lib-card.kb-open .kb-lib-thumb { width: 72px !important; height: 72px !important; flex: 0 0 72px !important; }
+    .kb-lib-card.kb-open .kb-lib-chev { display: block; }
+    .kb-lib-detail { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 36px; padding: 0 24px 28px !important; align-items: start; }
+    .kb-lib-detail > * { grid-column: 1; }
+    .kb-lib-detail > :last-child { grid-column: 2; grid-row: 1 / span 3; }
+    .kb-lib-detail img { max-height: 520px !important; object-fit: contain !important; height: auto !important; }
+
+    /* Videos: each video is its own tile, two across. */
+    .kb-vids { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+    .kb-vids > a { background: #222B36; border-radius: 20px; padding: 26px 28px !important; border: none !important; box-shadow: 0 10px 24px rgba(0,0,0,0.5); min-height: 96px; box-sizing: border-box; }
+    .kb-vids > a:hover { box-shadow: 0 0 0 1px rgba(34,211,238,0.4), 0 10px 24px rgba(0,0,0,0.5); }
+    .kb-vids > a > div:first-child > div:first-child { font-size: 19px !important; font-weight: 600 !important; }
+
+    /* Plan: week on the left, swaps and starting advice on the right. */
+    .kb-plan > .kb-plan-week { grid-column: 1; grid-row: 2 / span 2; }
+    .kb-plan > .kb-plan-week ~ div { grid-column: 2; }
+
+    /* Progress: lists and chart in two columns. */
+    .kb-prog > :not(:first-child):not(:last-child) { grid-column: auto; }
+    .kb-prog > .kb-prog-chart { grid-column: 2; grid-row: 2 / span 2; }
+
+    /* Pictures: add-photo card beside the intro, gallery four across. */
+    .kb-photos > div:nth-child(2) { grid-column: 1; }
+    .kb-photo-seg { max-width: 360px; }
+    .kb-photo-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important; gap: 20px !important; }
+    #root .kb-photo-grid img[alt^="Progress photo"], #root .kb-photo-compare img[alt^="Progress photo"] { max-width: 100%; }
+
+    /* Timer: big ring on the left, settings and controls on the right. */
+    .kb-timer-card { padding: 40px !important; }
+    .kb-timer-screen .kb-timer { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; column-gap: 48px; row-gap: 32px !important; }
+    .kb-timer-screen .kb-timer > :first-child { grid-row: 1 / span 2; max-width: 400px !important; }
+    .kb-timer-screen .kb-timer > :nth-child(2) { align-self: end; }
+    .kb-timer-screen .kb-timer > :nth-child(3) { align-self: start; }
+  }
 </style>
 </head>
 <body>
