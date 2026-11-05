@@ -3530,7 +3530,7 @@ export default function App() {
         fontFamily: theme.font.family,
         minHeight: "100vh",
         boxSizing: "border-box",
-        padding: settingsOpen && menuPinned ? (settingsMore ? "calc(172px + min(55vh, 460px) + env(safe-area-inset-top)) 20px 140px" : "calc(162px + env(safe-area-inset-top)) 20px 140px") : "24px 20px 140px",
+        padding: settingsOpen && menuPinned ? (settingsMore ? "calc(172px + min(55vh, 460px) + env(safe-area-inset-top)) 20px 140px" : "calc(162px + env(safe-area-inset-top)) 20px 140px") : "calc(24px + env(safe-area-inset-top)) 20px 140px",
       }}
     >
       <style>
