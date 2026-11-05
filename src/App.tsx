@@ -1788,6 +1788,15 @@ export default function App() {
   const [voice, setVoice] = useState<boolean>(() => loadVoice());
   const [wkView, setWkView] = useState<"overview" | "step">("overview");
   const [progRange, setProgRange] = useState<number>(7);
+  const [zoom, setZoom] = useState<{ src: string; name: string } | null>(null);
+  useEffect(() => {
+    if (!zoom) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoom(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoom]);
   muted = mute;
   voiceOff = !voice;
   const baseW = WORKOUTS[day];
@@ -2683,7 +2692,17 @@ export default function App() {
                   <div style={{ fontSize: 13, color: theme.text.secondary, marginTop: 2 }}>{r.amount}</div>
                 </div>
                 {thumbOf(r.name) ? (
-                  <img className="kb-ov-thumb" src={thumbOf(r.name)} alt="" style={{ width: 64, height: 64, flex: "0 0 64px", borderRadius: 14, objectFit: "cover", background: "#050C18" }} />
+                  <img
+                    className="kb-ov-thumb"
+                    src={thumbOf(r.name)}
+                    alt=""
+                    role="button"
+                    aria-label={"Enlarge " + r.name + " picture"}
+                    onClick={(e: any) => {
+                      e.stopPropagation();
+                      setZoom({ src: thumbOf(r.name), name: r.name });
+                    }}
+                    style={{ cursor: "zoom-in",  width: 64, height: 64, flex: "0 0 64px", borderRadius: 14, objectFit: "cover", background: "#050C18" }} />
                 ) : (
                   <div className="kb-ov-thumb" style={{ width: 64, height: 64, flex: "0 0 64px", borderRadius: 14, background: "#050C18", color: "rgba(34,211,238,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>{icon(sec.id)}</div>
                 )}
@@ -2691,6 +2710,15 @@ export default function App() {
             ))}
           </div>
         ))}
+        {zoom ? (
+          <div className="kb-zoom" role="dialog" aria-modal="true" aria-label={zoom.name} onClick={() => setZoom(null)} style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(3, 6, 10, 0.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 20, boxSizing: "border-box" }}>
+            <button onClick={() => setZoom(null)} aria-label="Close picture" style={{ position: "absolute", top: "calc(16px + env(safe-area-inset-top))", right: 16, width: 44, height: 44, borderRadius: 22, border: "none", cursor: "pointer", padding: 0, background: "#22D3EE", color: "#04121A", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></g></svg>
+            </button>
+            <img src={zoom.src} alt={zoom.name + " picture"} onClick={(e: any) => e.stopPropagation()} style={{ display: "block", maxWidth: "min(100%, 1000px)", maxHeight: "calc(100vh - 140px)", objectFit: "contain", borderRadius: 18, background: "#050C18", boxShadow: "0 0 40px rgba(34,211,238,0.18)" }} />
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#F3F6FA", textAlign: "center" }}>{zoom.name}</div>
+          </div>
+        ) : null}
       </div>
     );
   };
