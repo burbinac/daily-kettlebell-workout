@@ -1786,6 +1786,8 @@ export default function App() {
   const [libOpen, setLibOpen] = useState<string>("");
   const [libPhoto, setLibPhoto] = useState<Record<string, boolean>>({});
   const [voice, setVoice] = useState<boolean>(() => loadVoice());
+  const [wkView, setWkView] = useState<"overview" | "step">("overview");
+  const [progRange, setProgRange] = useState<number>(7);
   muted = mute;
   voiceOff = !voice;
   const baseW = WORKOUTS[day];
@@ -2614,6 +2616,85 @@ export default function App() {
     );
   };
 
+  // Day overview: the whole day at a glance, in sections with one compact row per exercise. Tapping a row opens that step.
+  const overviewBody = () => {
+    type ORow = { name: string; amount: string; stage: number };
+    const warm: ORow[] = [];
+    const main: ORow[] = [];
+    const cool: ORow[] = [];
+    stepDefs.forEach((d: StepDef, i: number) => {
+      if (d.kind === "mob" || d.kind === "act") {
+        const from = d.kind === "mob" ? 0 : 2;
+        WARMUP.slice(from, d.kind === "mob" ? 2 : WARMUP.length).forEach((r: string[]) => warm.push({ name: r[0], amount: r[1], stage: i }));
+      } else if (d.kind === "move") {
+        const m = w.moves[d.k];
+        main.push({ name: m.name, amount: m.amount, stage: i });
+      } else if (d.kind === "practice" && practiceMove) {
+        main.push({ name: practiceMove.name, amount: practiceMove.amount, stage: i });
+      } else {
+        COOLDOWN.forEach((r: string[], ci: number) => {
+          if (d.kind === "stretch" || (d.kind === "stretch1" ? ci < 2 : ci >= 2)) cool.push({ name: r[0], amount: r[1], stage: i });
+        });
+      }
+    });
+    const icon = (id: string) => (
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          {id === "warm" ? <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.4 1.3-3.8 2.5-5 .3 1.6 1 2.6 2 3 0-3 .2-5.5.5-8z" /> : null}
+          {id === "main" ? <g><circle cx="12" cy="14.5" r="5.5" /><path d="M9 9.5V7a3 3 0 0 1 6 0v2.5" /></g> : null}
+          {id === "cool" ? <g><path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14z" /><path d="M5 19l7-7" /></g> : null}
+        </g>
+      </svg>
+    );
+    const sections: { id: string; title: string; sub: string; rows: ORow[] }[] = [
+      { id: "warm", title: "Warm-up", sub: "Mobilize, then activate", rows: warm },
+      { id: "main", title: "Workout", sub: w.mainTitle, rows: main },
+      { id: "cool", title: "Cool down", sub: "Stretch and breathe", rows: cool },
+    ];
+    return (
+      <div className="kb-overview" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {sections.map((sec: { id: string; title: string; sub: string; rows: ORow[] }) => (
+          <div key={sec.id} className="kb-ov-card" style={{ background: theme.bg.subtle, borderRadius: 22, padding: "16px 16px 6px", boxShadow: theme.shadow.card }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(34, 211, 238, 0.14)", color: "#22D3EE", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>{icon(sec.id)}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: theme.text.primary }}>{sec.title}</div>
+                <div style={{ fontSize: 13, color: theme.text.secondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sec.sub}</div>
+              </div>
+            </div>
+            {sec.rows.map((r: ORow, i: number) => (
+              <button
+                key={r.name + i}
+                className="kb-ov-row"
+                onClick={() => {
+                  setStage(r.stage);
+                  setWkView("step");
+                  try {
+                    window.scrollTo(0, 0);
+                  } catch {
+                    // no scrolling here
+                  }
+                }}
+                aria-label={"Open " + r.name}
+                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minWidth: 0, textAlign: "left", background: "none", border: "none", borderTop: "1px solid " + theme.border.subtle, padding: "10px 0", cursor: "pointer" }}
+              >
+                <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: theme.text.primary, overflowWrap: "anywhere" }}>{r.name}</div>
+                  <div style={{ fontSize: 13, color: theme.text.secondary, marginTop: 2 }}>{r.amount}</div>
+                </div>
+                {thumbOf(r.name) ? (
+                  <img className="kb-ov-thumb" src={thumbOf(r.name)} alt="" style={{ width: 64, height: 64, flex: "0 0 64px", borderRadius: 14, objectFit: "cover", background: "#050C18" }} />
+                ) : (
+                  <div className="kb-ov-thumb" style={{ width: 64, height: 64, flex: "0 0 64px", borderRadius: 14, background: "#050C18", color: "rgba(34,211,238,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>{icon(sec.id)}</div>
+                )}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const workoutScreen = () => sessionWrap(
     <div className={"kb-workout" + (runPhase === "run" ? " kb-running" : "")} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {runPhase === "run" ? null : (
@@ -2633,6 +2714,7 @@ export default function App() {
                 setDay(k);
                 setStage(0);
                 setCurRound(1);
+                setWkView("overview");
               }}
               style={{
                 flex: 1,
@@ -2658,6 +2740,13 @@ export default function App() {
           </div>
         ))}
       </div>
+      {wkView === "step" ? (
+        <button className="kb-wk-back" onClick={() => setWkView("overview")} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: "4px 0", marginBottom: -8, cursor: "pointer", color: "#22D3EE", fontSize: 15, fontWeight: 600 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <span>Day overview</span>
+        </button>
+      ) : null}
+      {wkView === "step" ? (
       <div className="kb-wk-bars" style={{ display: "flex", gap: 6 }}>
         {stageList.map((s: string, i: number) => (
           <button
@@ -2676,6 +2765,7 @@ export default function App() {
           />
         ))}
       </div>
+      ) : null}
         </div>
       )}
       {runPhase === "run" && curItem ? (
@@ -2736,6 +2826,7 @@ export default function App() {
           </div>
         </div>
       ) : null}
+      {runPhase !== "run" && wkView === "overview" ? overviewBody() : (
       <div
         className="kb-wk-stage"
         style={{ touchAction: "pan-y", display: "flex", flexDirection: "column", opacity: runPhase === "run" ? 0.55 : 1 }}
@@ -2756,6 +2847,7 @@ export default function App() {
       >
         {stageBody()}
       </div>
+      )}
       {runPhase === "run" ? (() => {
         const seenNames: string[] = [];
         if (curItem) seenNames.push(curItem.kind === "move" ? curItem.name : (script[runIdx + 1] ? script[runIdx + 1].name : ""));
@@ -3239,12 +3331,84 @@ export default function App() {
     return (
       <div className="kb-screen kb-prog" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
-          <div style={eyebrow}>Weight log</div>
+          <div style={eyebrow}>Your training</div>
           <h1 style={bigTitle}>Progress</h1>
           <div style={{ ...subtle, fontSize: 18, lineHeight: "26px", marginTop: 8 }}>
-            Log a weight from any exercise on the Workout tab and it shows up here.
+            Finished days, timed sessions and logged weights from this device and your account.
           </div>
         </div>
+        {(() => {
+          const sum = (isos: string[]) => isos.reduce((a: number, k: string) => a + (sessions[k] || 0), 0);
+          const totalSec = Object.keys(sessions).reduce((a: number, k: string) => a + (sessions[k] || 0), 0);
+          const lastN = (n: number): string[] => {
+            const out: string[] = [];
+            const t = new Date();
+            for (let i = n - 1; i >= 0; i--) out.push(isoOf(new Date(t.getFullYear(), t.getMonth(), t.getDate() - i)));
+            return out;
+          };
+          const seven = lastN(7);
+          const range = lastN(progRange);
+          const rangeDays = range.filter((k: string) => days.indexOf(k) >= 0).length;
+          const rangeSec = sum(range);
+          const latest = allLog[0];
+          const mins = (sec: number) => String(Math.round(sec / 60));
+          const tiles: string[][] = [
+            [String(days.length), "Total workouts", days.length === 1 ? "day trained" : "days trained"],
+            [mins(totalSec), "Minutes trained", "timed sessions"],
+            [String(trainedThisWeek) + "/7", "This week", "days trained"],
+            [latest ? String(latest.kg) + " kg" : "\u2014", "Latest weight", latest ? latest.move : "none logged yet"],
+          ];
+          const L = ["S", "M", "T", "W", "T", "F", "S"];
+          return (
+            <div className="kb-prog-top" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div className="kb-prog-tiles" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+                {tiles.map((t: string[]) => (
+                  <div key={t[1]} style={{ background: theme.bg.subtle, borderRadius: 20, padding: "16px 16px 14px", boxShadow: theme.shadow.card, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.text.secondary }}>{t[1]}</div>
+                    <div style={{ fontSize: 30, lineHeight: "36px", fontWeight: 800, color: t[0] === "0" || t[0] === "0/7" || t[0] === "\u2014" ? theme.text.secondary : "#22D3EE", marginTop: 4, letterSpacing: "-0.02em" }}>{t[0]}</div>
+                    <div style={{ fontSize: 12, color: theme.text.secondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t[2]}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="kb-prog-week" style={{ background: theme.bg.subtle, borderRadius: 20, padding: 16, boxShadow: theme.shadow.card }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 14 }}>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: theme.text.primary }}>{"Last " + String(progRange) + " days"}</div>
+                  <div style={{ display: "flex", background: theme.fill.secondary, borderRadius: 12, padding: 3 }}>
+                    {[7, 30].map((n: number) => (
+                      <button key={n} onClick={() => setProgRange(n)} style={{ border: "none", cursor: "pointer", height: 30, padding: "0 14px", borderRadius: 9, fontSize: 13, fontWeight: 700, background: progRange === n ? "#22D3EE" : "transparent", color: progRange === n ? "#04121A" : theme.text.secondary }}>
+                        {String(n) + "D"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
+                  {seven.map((k: string) => {
+                    const d = new Date(k + "T12:00:00");
+                    const on = days.indexOf(k) >= 0;
+                    const isToday = k === todayStr;
+                    return (
+                      <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: theme.text.secondary }}>{L[d.getDay()]}</div>
+                        <div aria-label={k + (on ? " trained" : "")} style={{ width: 34, height: 34, borderRadius: 17, boxSizing: "border-box", background: on ? "#22D3EE" : "transparent", border: on ? "2px solid #22D3EE" : isToday ? "2px solid rgba(34,211,238,0.7)" : "2px solid " + theme.border.default, boxShadow: on ? "0 0 12px rgba(34,211,238,0.45)" : "none", color: on ? "#04121A" : theme.text.secondary, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
+                          {String(d.getDate())}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                  {[[String(rangeDays), "Training days"], [mins(rangeSec), "Minutes"]].map((x: string[]) => (
+                    <div key={x[1]} style={{ flex: 1, background: theme.fill.secondary, borderRadius: 14, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: theme.text.primary }}>{x[0]}</div>
+                      <div style={{ fontSize: 12, color: theme.text.secondary }}>{x[1]}</div>
+                    </div>
+                  ))}
+                </div>
+                {days.length === 0 ? <div style={{ ...subtle, fontSize: 13, marginTop: 12 }}>Finish a day to fill your first circle.</div> : null}
+              </div>
+            </div>
+          );
+        })()}
         {names.length > 0 ? (
           <div style={{ ...card, padding: "4px 20px" }}>
             {names.map((n: string, idx: number) => {
@@ -3498,6 +3662,49 @@ export default function App() {
         {tab === "photos" ? photosScreen() : null}
         {tab === "plan" ? planScreen() : null}
       </div>
+      {runPhase === "run" ? null : (
+        <nav className="kb-pillnav" aria-label="Main">
+          {[["workout", "Workouts"], ["progress", "Progress"], ["menu", "Menu"]].map((x: string[]) => {
+            const active = x[0] === "menu" ? settingsOpen && menuPinned : tab === x[0];
+            return (
+              <button
+                key={x[0]}
+                className={"kb-pill" + (active ? " kb-active" : "")}
+                aria-current={active ? "page" : undefined}
+                onClick={() => {
+                  if (x[0] === "menu") {
+                    if (settingsOpen) {
+                      setSettingsOpen(false);
+                      setMenuPinned(false);
+                    } else {
+                      setMenuPinned(true);
+                      setSettingsMore(false);
+                      setSettingsOpen(true);
+                    }
+                    return;
+                  }
+                  setTab(x[0] as Tab);
+                  if (x[0] === "workout") setWkView("overview");
+                  setSettingsOpen(false);
+                  setMenuPinned(false);
+                  try {
+                    window.scrollTo(0, 0);
+                  } catch {
+                    // no scrolling here
+                  }
+                }}
+              >
+                {x[0] === "menu" ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></g></svg>
+                ) : (
+                  <NavIcon id={x[0]} size={18} />
+                )}
+                <span>{x[1]}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
       {settingsOpen && menuPinned ? (
         <div
           className="kb-menu"
