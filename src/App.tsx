@@ -1789,6 +1789,7 @@ export default function App() {
   const [wkView, setWkView] = useState<"overview" | "step">("overview");
   const [progRange, setProgRange] = useState<number>(7);
   const [zoom, setZoom] = useState<{ src: string; name: string } | null>(null);
+  const [ovClosed, setOvClosed] = useState<Record<string, boolean>>({ warm: true });
   useEffect(() => {
     if (!zoom) return;
     const onKey = (e: KeyboardEvent) => {
@@ -2664,14 +2665,21 @@ export default function App() {
       <div className="kb-overview" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {sections.map((sec: { id: string; title: string; sub: string; rows: ORow[] }) => (
           <div key={sec.id} className="kb-ov-card" style={{ background: theme.bg.subtle, borderRadius: 22, padding: "16px 16px 6px", boxShadow: theme.shadow.card }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <button
+              className="kb-ov-head"
+              onClick={() => setOvClosed({ ...ovClosed, [sec.id]: !ovClosed[sec.id] })}
+              aria-expanded={!ovClosed[sec.id]}
+              aria-label={(ovClosed[sec.id] ? "Show " : "Hide ") + sec.title}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, marginBottom: ovClosed[sec.id] ? 10 : 6, cursor: "pointer" }}
+            >
               <div style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(34, 211, 238, 0.14)", color: "#22D3EE", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>{icon(sec.id)}</div>
-              <div style={{ minWidth: 0 }}>
+              <div style={{ minWidth: 0, flex: "1 1 auto" }}>
                 <div style={{ fontSize: 17, fontWeight: 700, color: theme.text.primary }}>{sec.title}</div>
-                <div style={{ fontSize: 13, color: theme.text.secondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sec.sub}</div>
+                <div style={{ fontSize: 13, color: theme.text.secondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ovClosed[sec.id] ? String(sec.rows.length) + " exercises" : sec.sub}</div>
               </div>
-            </div>
-            {sec.rows.map((r: ORow, i: number) => (
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "0 0 auto", color: theme.text.secondary, transform: ovClosed[sec.id] ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
+            {(ovClosed[sec.id] ? [] : sec.rows).map((r: ORow, i: number) => (
               <button
                 key={r.name + i}
                 className="kb-ov-row"
