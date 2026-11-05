@@ -1900,7 +1900,24 @@ export default function App() {
   const [wkView, setWkView] = useState<"overview" | "step">("overview");
   const [progRange, setProgRange] = useState<number>(7);
   const [zoom, setZoom] = useState<{ src: string; name: string } | null>(null);
-  const [ovClosed, setOvClosed] = useState<Record<string, boolean>>({ warm: true });
+  const [ovClosed, setOvClosed] = useState<Record<string, boolean>>({
+    warm: typeof window !== "undefined" && window.matchMedia ? !window.matchMedia("(min-width: 1100px)").matches : true,
+  });
+  const [ovTouched] = useState<{ v: boolean }>({ v: false });
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia("(min-width: 1100px)");
+    const onChange = () => {
+      if (ovTouched.v) return;
+      setOvClosed((prev: Record<string, boolean>) => ({ ...prev, warm: !mq.matches }));
+    };
+    if (mq.addEventListener) mq.addEventListener("change", onChange);
+    else if ((mq as any).addListener) (mq as any).addListener(onChange);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", onChange);
+      else if ((mq as any).removeListener) (mq as any).removeListener(onChange);
+    };
+  }, []);
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>(() => loadSessionLogs());
   const [guideSheet, setGuideSheet] = useState<null | "weights" | "rounds">(null);
   const [sheetUnit, setSheetUnit] = useState<"kg" | "lb">(() => loadUnit());
@@ -2908,7 +2925,10 @@ export default function App() {
           <div key={sec.id} className="kb-ov-card" style={{ background: theme.bg.subtle, borderRadius: 22, padding: "16px 16px 6px", boxShadow: theme.shadow.card }}>
             <button
               className="kb-ov-head"
-              onClick={() => setOvClosed({ ...ovClosed, [sec.id]: !ovClosed[sec.id] })}
+              onClick={() => {
+                ovTouched.v = true;
+                setOvClosed({ ...ovClosed, [sec.id]: !ovClosed[sec.id] });
+              }}
               aria-expanded={!ovClosed[sec.id]}
               aria-label={(ovClosed[sec.id] ? "Show " : "Hide ") + sec.title}
               style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, marginBottom: ovClosed[sec.id] ? 10 : 6, cursor: "pointer" }}
