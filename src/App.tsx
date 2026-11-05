@@ -172,6 +172,117 @@ function saveLog(list: LogEntry[]): boolean {
   }
 }
 
+// Per-day main-set results (weights, rounds, notes). Synced via kb_progress.
+interface SessionLog {
+  date: string;
+  day: DayKey;
+  minutes: number;
+  target: number;
+  rounds: number;
+  notes: string;
+  unit: "kg" | "lb";
+  weights: Record<string, number>;
+}
+
+const SESSION_LOG_KEY = "kettlebell-session-log-v1";
+const UNIT_KEY = "kettlebell-weight-unit-v1";
+
+function loadSessionLogs(): SessionLog[] {
+  try {
+    const raw = localStorage.getItem(SESSION_LOG_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const out: SessionLog[] = [];
+    parsed.forEach((p: any) => {
+      if (!p || typeof p.date !== "string" || typeof p.day !== "string") return;
+      if (typeof p.rounds !== "number" || typeof p.target !== "number") return;
+      const weights: Record<string, number> = {};
+      if (p.weights && typeof p.weights === "object") {
+        Object.keys(p.weights).forEach((k: string) => {
+          if (typeof p.weights[k] === "number") weights[k] = p.weights[k];
+        });
+      }
+      out.push({
+        date: p.date,
+        day: p.day as DayKey,
+        minutes: typeof p.minutes === "number" ? p.minutes : 0,
+        target: p.target,
+        rounds: p.rounds,
+        notes: typeof p.notes === "string" ? p.notes : "",
+        unit: p.unit === "lb" ? "lb" : "kg",
+        weights: weights,
+      });
+    });
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+function saveSessionLogs(list: SessionLog[]): boolean {
+  try {
+    const text = JSON.stringify(list);
+    localStorage.setItem(SESSION_LOG_KEY, text);
+    return localStorage.getItem(SESSION_LOG_KEY) === text;
+  } catch {
+    return false;
+  }
+}
+
+function loadUnit(): "kg" | "lb" {
+  try {
+    return localStorage.getItem(UNIT_KEY) === "lb" ? "lb" : "kg";
+  } catch {
+    return "kg";
+  }
+}
+
+function saveUnit(u: "kg" | "lb") {
+  try {
+    localStorage.setItem(UNIT_KEY, u);
+  } catch {
+    // ignore
+  }
+}
+
+function shortMove(name: string): string {
+  const map: Record<string, string> = {
+    "Two-hand swing": "Swing",
+    "Goblet squat": "Squat",
+    "Overhead press": "Press",
+    "Suitcase carry": "Carry",
+    "Deadlift to row": "Row",
+    "Plank pull-through": "Pull-through",
+    "Kettlebell deadlift": "Deadlift",
+    "Goblet squat practice": "Squat practice",
+    "Easy swings": "Easy swings",
+    "Swing practice": "Swing practice",
+  };
+  if (map[name]) return map[name];
+  return name.replace(/^Kettlebell\s+/i, "");
+}
+
+function kgToDisplay(kg: number, unit: "kg" | "lb"): number {
+  if (unit === "lb") return Math.round(kg * 2.20462);
+  return Math.round(kg * 10) / 10;
+}
+
+function displayToKg(val: number, unit: "kg" | "lb"): number {
+  if (unit === "lb") return Math.round((val / 2.20462) * 10) / 10;
+  return val;
+}
+
+function lastKgForMove(name: string, log: LogEntry[], sessions: SessionLog[]): number {
+  for (let i = 0; i < sessions.length; i++) {
+    const w = sessions[i].weights[name];
+    if (typeof w === "number") return w;
+  }
+  const hit = log.find((e: LogEntry) => e.move === name);
+  if (hit) return hit.kg;
+  return 16;
+}
+
 const PHOTO_KEY = "kettlebell-progress-photos-v1";
 
 function loadPhotos(): Photo[] {
@@ -1790,6 +1901,13 @@ export default function App() {
   const [progRange, setProgRange] = useState<number>(7);
   const [zoom, setZoom] = useState<{ src: string; name: string } | null>(null);
   const [ovClosed, setOvClosed] = useState<Record<string, boolean>>({ warm: true });
+  const [sessionLogs, setSessionLogs] = useState<SessionLog[]>(() => loadSessionLogs());
+  const [guideSheet, setGuideSheet] = useState<null | "weights" | "rounds">(null);
+  const [sheetUnit, setSheetUnit] = useState<"kg" | "lb">(() => loadUnit());
+  const [sheetWeights, setSheetWeights] = useState<Record<string, number>>({});
+  const [sheetNotes, setSheetNotes] = useState<string>("");
+  const [sheetRounds, setSheetRounds] = useState<number>(0);
+  const [guideResume, setGuideResume] = useState<"advance" | "finish" | null>(null);
   useEffect(() => {
     if (!zoom) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1997,13 +2115,35 @@ export default function App() {
     setRunOn(false);
     setRunLeft(0);
     setRunCount(0);
+    setGuideSheet(null);
+    setGuideResume(null);
     markToday();
   }
 
-  // Moves to the next item: one beep between moves, two for rest, a new round or a new step, then speaks it.
-  function advance() {
-    const cur = script[runIdx];
-    const nxt = script[runIdx + 1];
+  function openWeightsSheet(resume: "advance" | "finish") {
+    const init: Record<string, number> = {};
+    w.moves.forEach((m: Move) => {
+      const fromState = weights[m.name];
+      init[m.name] = fromState !== undefined ? fromState : lastKgForMove(m.name, log, sessionLogs);
+    });
+    setSheetWeights(init);
+    setSheetNotes("");
+    setSheetUnit(loadUnit());
+    setGuideResume(resume);
+    setRunOn(false);
+    setGuideSheet("weights");
+  }
+
+  function openRoundsSheet(resume: "advance" | "finish") {
+    setSheetRounds(0);
+    setGuideResume(resume);
+    setRunOn(false);
+    setGuideSheet("rounds");
+  }
+
+  function applyAdvance(fromIdx: number) {
+    const cur = script[fromIdx];
+    const nxt = script[fromIdx + 1];
     if (!cur || !nxt) {
       finishRun();
       return;
@@ -2012,11 +2152,102 @@ export default function App() {
     const big = stageChange || nxt.kind === "rest" || cur.kind === "rest";
     beep(big ? 2 : 1);
     speak((stageChange ? nxt.stageName + ". " : "") + nxt.say, big ? 650 : 350);
-    setRunIdx(runIdx + 1);
+    setRunIdx(fromIdx + 1);
     setRunLeft(nxt.secs);
     setRunCount(0);
     if (nxt.stage !== cur.stage) setStage(nxt.stage);
     if (nxt.round > 0) setCurRound(nxt.round);
+    setRunOn(true);
+  }
+
+  function closeGuideSheet() {
+    const resume = guideResume;
+    setGuideSheet(null);
+    setGuideResume(null);
+    if (resume === "finish") {
+      finishRun();
+      return;
+    }
+    if (resume === "advance") {
+      applyAdvance(runIdx);
+    }
+  }
+
+  function continueWeights() {
+    // Persist the chosen weights into the live steppers and the weight log.
+    const nextWeights: Record<string, number> = { ...weights, ...sheetWeights };
+    setWeights(nextWeights);
+    let nextLog: LogEntry[] = log;
+    w.moves.forEach((m: Move) => {
+      const kg = sheetWeights[m.name] !== undefined ? sheetWeights[m.name] : 16;
+      const entry: LogEntry = { move: m.name, kg: kg, when: new Date().toLocaleDateString() };
+      nextLog = [entry, ...nextLog];
+    });
+    setLog(nextLog);
+    setSaveFailed(!saveLog(nextLog));
+    saveUnit(sheetUnit);
+    const resume = guideResume;
+    setGuideSheet(null);
+    setGuideResume(null);
+    if (resume === "finish") finishRun();
+    else if (resume === "advance") applyAdvance(runIdx);
+  }
+
+  function continueRounds() {
+    const weightMap: Record<string, number> = { ...sheetWeights };
+    if (Object.keys(weightMap).length === 0) {
+      w.moves.forEach((m: Move) => {
+        weightMap[m.name] = weights[m.name] !== undefined ? weights[m.name] : lastKgForMove(m.name, log, sessionLogs);
+      });
+    }
+    const entry: SessionLog = {
+      date: todayStr,
+      day: day,
+      minutes: w.minutes,
+      target: mainRounds,
+      rounds: sheetRounds,
+      notes: sheetNotes,
+      unit: sheetUnit,
+      weights: weightMap,
+    };
+    const next: SessionLog[] = [entry, ...sessionLogs.filter((s: SessionLog) => s.date !== todayStr || s.day !== day)];
+    setSessionLogs(next);
+    saveSessionLogs(next);
+    saveUnit(sheetUnit);
+    const resume = guideResume;
+    setGuideSheet(null);
+    setGuideResume(null);
+    if (resume === "finish") finishRun();
+    else if (resume === "advance") applyAdvance(runIdx);
+  }
+
+  // Moves to the next item: one beep between moves, two for rest, a new round or a new step, then speaks it.
+  // Before the main set, opens the weights sheet; after the main set, opens the rounds sheet.
+  function advance() {
+    if (guideSheet) return;
+    const cur = script[runIdx];
+    const nxt = script[runIdx + 1];
+    if (!cur) {
+      finishRun();
+      return;
+    }
+    if (!nxt) {
+      if (cur.stageName === "Main set") {
+        openRoundsSheet("finish");
+        return;
+      }
+      finishRun();
+      return;
+    }
+    if (cur.stageName === "Warm up" && nxt.stageName === "Main set") {
+      openWeightsSheet("advance");
+      return;
+    }
+    if (cur.stageName === "Main set" && nxt.stageName !== "Main set") {
+      openRoundsSheet("advance");
+      return;
+    }
+    applyAdvance(runIdx);
   }
 
   useEffect(() => {
@@ -2037,7 +2268,17 @@ export default function App() {
     setRunLeft(0);
     setRunCount(0);
     setCurRound(1);
+    setGuideSheet(null);
+    setGuideResume(null);
   }, [day]);
+  useEffect(() => {
+    if (!guideSheet) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeGuideSheet();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [guideSheet, guideResume, runIdx]);
 
   useEffect(() => {
     if (runPhase === "run") return;
@@ -3388,11 +3629,13 @@ export default function App() {
           const rangeSec = sum(range);
           const latest = allLog[0];
           const mins = (sec: number) => String(Math.round(sec / 60));
+          const lastAmrap = sessionLogs[0];
           const tiles: string[][] = [
             [String(days.length), "Total workouts", days.length === 1 ? "day trained" : "days trained"],
             [mins(totalSec), "Minutes trained", "timed sessions"],
             [String(trainedThisWeek) + "/7", "This week", "days trained"],
             [latest ? String(latest.kg) + " kg" : "\u2014", "Latest weight", latest ? latest.move : "none logged yet"],
+            [lastAmrap ? String(lastAmrap.rounds) + "/" + String(lastAmrap.target) : "\u2014", "Last AMRAP", lastAmrap ? prettyDate(lastAmrap.date) + " \u00b7 " + String(lastAmrap.minutes) + " min" : "none logged yet"],
           ];
           const L = ["S", "M", "T", "W", "T", "F", "S"];
           return (
@@ -3442,6 +3685,19 @@ export default function App() {
                 </div>
                 {days.length === 0 ? <div style={{ ...subtle, fontSize: 13, marginTop: 12 }}>Finish a day to fill your first circle.</div> : null}
               </div>
+              {sessionLogs[0] ? (() => {
+                const s = sessionLogs[0];
+                const parts = Object.keys(s.weights).map((k: string) => shortMove(k) + " " + String(kgToDisplay(s.weights[k], s.unit)) + " " + s.unit);
+                return (
+                  <div key="last-amrap" style={{ background: theme.bg.subtle, borderRadius: 20, padding: 16, boxShadow: theme.shadow.card }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.text.secondary }}>Last AMRAP detail</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "#22D3EE", marginTop: 4 }}>{String(s.rounds) + " of " + String(s.target) + " rounds"}</div>
+                    <div style={{ fontSize: 13, color: theme.text.secondary, marginTop: 4 }}>{prettyDate(s.date) + " \u00b7 Day " + s.day + " \u00b7 " + String(s.minutes) + " min"}</div>
+                    {parts.length > 0 ? <div style={{ fontSize: 14, color: theme.text.primary, marginTop: 10, lineHeight: "20px" }}>{parts.join(" \u00b7 ")}</div> : null}
+                    {s.notes ? <div style={{ fontSize: 13, color: theme.text.secondary, marginTop: 8, fontStyle: "italic" }}>{s.notes}</div> : null}
+                  </div>
+                );
+              })() : null}
             </div>
           );
         })()}
@@ -3867,6 +4123,232 @@ export default function App() {
               </div>
               </div>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+      {guideSheet ? (
+        <div
+          className="kb-guide"
+          role="dialog"
+          aria-modal="true"
+          aria-label={guideSheet === "weights" ? "Set the weight you used" : "Next attempt recommendation"}
+          onClick={closeGuideSheet}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 70,
+            background: "rgba(3, 6, 10, 0.72)",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            boxSizing: "border-box",
+            padding: "12px 12px calc(12px + env(safe-area-inset-bottom)) 12px",
+          } as CSSProperties}
+        >
+          <div
+            onClick={(e: any) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              maxHeight: "min(88vh, 760px)",
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              background: "#1A222C",
+              borderRadius: 28,
+              boxShadow: "0 -8px 40px rgba(0,0,0,0.55)",
+              padding: "18px 18px 20px",
+              boxSizing: "border-box",
+              color: "#F3F6FA",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: "28px" }}>
+                  {"AMRAP · " + String(w.minutes) + " mins"}
+                </div>
+                {guideSheet === "rounds" ? (
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "#B7C2D0", marginTop: 4 }}>Next attempt recommendation</div>
+                ) : null}
+              </div>
+              <button
+                onClick={closeGuideSheet}
+                aria-label="Close"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  flex: "0 0 auto",
+                  background: "#2F3A47",
+                  color: "#F3F6FA",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></g></svg>
+              </button>
+            </div>
+
+            {guideSheet === "weights" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ fontSize: 17, fontWeight: 600, color: "#F3F6FA" }}>Set the weight you used.</div>
+                <div style={{ alignSelf: "flex-start", display: "flex", background: "#2F3A47", borderRadius: 12, padding: 3 }}>
+                  {(["kg", "lb"] as ("kg" | "lb")[]).map((u: "kg" | "lb") => (
+                    <button
+                      key={u}
+                      onClick={() => setSheetUnit(u)}
+                      style={{
+                        height: 32,
+                        padding: "0 16px",
+                        borderRadius: 9,
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        background: sheetUnit === u ? "#22D3EE" : "transparent",
+                        color: sheetUnit === u ? "#04121A" : "#B7C2D0",
+                      }}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {w.moves.map((m: Move) => {
+                    const kg = sheetWeights[m.name] !== undefined ? sheetWeights[m.name] : 16;
+                    const shown = kgToDisplay(kg, sheetUnit);
+                    const step = sheetUnit === "lb" ? 5 : 2;
+                    return (
+                      <div key={m.name} style={{ display: "flex", alignItems: "center", gap: 12, background: "#222B36", borderRadius: 18, padding: "12px 14px" }}>
+                        <div style={{ flex: 1, minWidth: 0, fontSize: 17, fontWeight: 700 }}>{shortMove(m.name)}</div>
+                        <button
+                          onClick={() => setSheetWeights({ ...sheetWeights, [m.name]: Math.max(2, displayToKg(shown - step, sheetUnit)) })}
+                          aria-label={"Less weight for " + m.name}
+                          style={{ width: 40, height: 40, borderRadius: 20, border: "none", cursor: "pointer", fontSize: 22, padding: 0, background: "#2F3A47", color: "#F3F6FA" }}
+                        >
+                          {"\u2212"}
+                        </button>
+                        <div style={{ minWidth: 72, textAlign: "center", fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                          {String(shown) + " " + sheetUnit}
+                        </div>
+                        <button
+                          onClick={() => setSheetWeights({ ...sheetWeights, [m.name]: Math.min(60, displayToKg(shown + step, sheetUnit)) })}
+                          aria-label={"More weight for " + m.name}
+                          style={{ width: 40, height: 40, borderRadius: 20, border: "none", cursor: "pointer", fontSize: 22, padding: 0, background: "#2F3A47", color: "#F3F6FA" }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Notes</div>
+                  <div style={{ fontSize: 13, color: "#98A5B5", marginBottom: 8, lineHeight: "18px" }}>
+                    Add anything you want to remember about this part.
+                  </div>
+                  <textarea
+                    value={sheetNotes}
+                    onChange={(e: any) => setSheetNotes(e.target.value)}
+                    rows={3}
+                    placeholder="Optional"
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      borderRadius: 14,
+                      border: "1px solid #3A4655",
+                      background: "#12151A",
+                      color: "#F3F6FA",
+                      padding: 12,
+                      fontSize: 15,
+                      fontFamily: "inherit",
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={continueWeights}
+                  style={{
+                    width: "100%",
+                    height: 54,
+                    borderRadius: 27,
+                    border: "none",
+                    cursor: "pointer",
+                    background: "#F3F6FA",
+                    color: "#04121A",
+                    fontSize: 17,
+                    fontWeight: 700,
+                    marginTop: 4,
+                  }}
+                >
+                  Continue
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ fontSize: 14, color: "#98A5B5" }}>Based on your result for this segment.</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, background: "#222B36", borderRadius: 20, padding: "18px 14px" }}>
+                  <button
+                    onClick={() => setSheetRounds(Math.max(0, sheetRounds - 1))}
+                    aria-label="Fewer rounds"
+                    style={{ width: 48, height: 48, borderRadius: 24, border: "none", cursor: "pointer", fontSize: 26, padding: 0, background: "#2F3A47", color: "#F3F6FA" }}
+                  >
+                    {"\u2212"}
+                  </button>
+                  <div style={{ textAlign: "center", minWidth: 110 }}>
+                    <div style={{ fontSize: 40, fontWeight: 800, lineHeight: "44px", fontVariantNumeric: "tabular-nums" }}>{String(sheetRounds)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#B7C2D0" }}>Rounds</div>
+                  </div>
+                  <button
+                    onClick={() => setSheetRounds(Math.min(40, sheetRounds + 1))}
+                    aria-label="More rounds"
+                    style={{ width: 48, height: 48, borderRadius: 24, border: "none", cursor: "pointer", fontSize: 26, padding: 0, background: "#2F3A47", color: "#F3F6FA" }}
+                  >
+                    +
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "#222B36", borderRadius: 16, padding: "14px 14px 12px" }}>
+                    <div style={{ fontSize: 13, color: "#98A5B5", fontWeight: 600 }}>Target</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: "#22D3EE", marginTop: 4 }}>{String(mainRounds)}</div>
+                    <div style={{ fontSize: 12, color: "#98A5B5" }}>rounds</div>
+                  </div>
+                  <div style={{ background: "#222B36", borderRadius: 16, padding: "14px 14px 12px" }}>
+                    <div style={{ fontSize: 13, color: "#98A5B5", fontWeight: 600 }}>Actual</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: "#F3F6FA", marginTop: 4 }}>{String(sheetRounds)}</div>
+                    <div style={{ fontSize: 12, color: "#98A5B5" }}>rounds</div>
+                  </div>
+                </div>
+                <div style={{ background: "#222B36", borderRadius: 16, padding: 14 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#22D3EE", marginBottom: 6 }}>Recommendation</div>
+                  <div style={{ fontSize: 14, lineHeight: "20px", color: "#B7C2D0" }}>
+                    {sheetRounds < mainRounds
+                      ? "This is your baseline, not a max-out test. Keep the same weight next time and focus on smooth, controlled rounds."
+                      : "Nice work hitting the target. Next time try one step heavier on your main lifts and keep the same smooth pace."}
+                  </div>
+                </div>
+                <button
+                  onClick={continueRounds}
+                  style={{
+                    width: "100%",
+                    height: 54,
+                    borderRadius: 27,
+                    border: "none",
+                    cursor: "pointer",
+                    background: "#F3F6FA",
+                    color: "#04121A",
+                    fontSize: 17,
+                    fontWeight: 700,
+                    marginTop: 4,
+                  }}
+                >
+                  Continue
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ) : null}

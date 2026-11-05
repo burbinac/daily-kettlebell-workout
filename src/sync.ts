@@ -10,6 +10,7 @@ const KEYS = [
   "kettlebell-session-times-v1",
   "kettlebell-settings-v1",
   "kettlebell-swaps-v1",
+  "kettlebell-session-log-v1",
 ];
 const META_KEY = "kettlebell-sync-meta-v1";
 
